@@ -1,0 +1,93 @@
+#!/bin/sh
+#
+# @name Gazebo x500 (GCS testing)
+#
+# @type Quadrotor
+#
+# Sister airframe of 4001_gz_x500 for GCS development against SITL.
+# Same x500 quad / rotor layout as 4001, BUT:
+#   - throw-to-launch is OFF (motors react to normal arm + takeoff)
+#   - 6 SITL bypasses are kept (no real RC/GCS/ESC in simulator)
+#
+# Use case: connect a self-developed MAVLink GCS (pymavlink etc.) on the LAN
+# to udp 192.168.50.173:18570, exercise arm/disarm, takeoff, land,
+# mission upload, waypoint nav. SITL bypasses ensure the drone doesn't
+# failsafe-disarm just because there's no RC stick or QGC keepalive.
+#
+
+. ${R}etc/init.d/rc.mc_defaults
+
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
+# Force model = x500 (not x500_gcs) since this airframe uses the standard x500
+# Gazebo mesh. The make target name "gz_x500_gcs" only selects this airframe
+# (SYS_AUTOSTART=4007); we don't ship a separate x500_gcs/ model dir.
+PX4_SIM_MODEL=x500
+
+param set-default SIM_GZ_EN 1
+
+param set-default CA_AIRFRAME 0
+param set-default CA_ROTOR_COUNT 4
+
+param set-default CA_ROTOR0_PX 0.13
+param set-default CA_ROTOR0_PY 0.22
+param set-default CA_ROTOR0_KM  0.05
+
+param set-default CA_ROTOR1_PX -0.13
+param set-default CA_ROTOR1_PY -0.20
+param set-default CA_ROTOR1_KM  0.05
+
+param set-default CA_ROTOR2_PX 0.13
+param set-default CA_ROTOR2_PY -0.22
+param set-default CA_ROTOR2_KM -0.05
+
+param set-default CA_ROTOR3_PX -0.13
+param set-default CA_ROTOR3_PY 0.20
+param set-default CA_ROTOR3_KM -0.05
+
+param set-default SIM_GZ_EC_FUNC1 101
+param set-default SIM_GZ_EC_FUNC2 102
+param set-default SIM_GZ_EC_FUNC3 103
+param set-default SIM_GZ_EC_FUNC4 104
+
+param set-default SIM_GZ_EC_MIN1 150
+param set-default SIM_GZ_EC_MIN2 150
+param set-default SIM_GZ_EC_MIN3 150
+param set-default SIM_GZ_EC_MIN4 150
+
+param set-default SIM_GZ_EC_MAX1 1000
+param set-default SIM_GZ_EC_MAX2 1000
+param set-default SIM_GZ_EC_MAX3 1000
+param set-default SIM_GZ_EC_MAX4 1000
+
+param set-default MPC_THR_HOVER 0.60
+
+# ----------------------------------------------------------------------------
+# SITL bypasses (same as 4001 throw-demo, minus COM_THROW_EN)
+# ----------------------------------------------------------------------------
+# These let arm + takeoff / land / mission cycle through cleanly without
+# real RC/GCS/ESC telemetry. They are SITL-only (init.d-posix path) and do
+# NOT propagate to real flight controller firmware.
+#
+# NAV_DLL_ACT=0       : disable GCS-loss failsafe action
+# NAV_RCL_ACT=0       : disable RC-loss failsafe action
+# COM_RC_IN_MODE=4    : declare RC stick input not required for arming
+# FD_ESCS_EN=0        : disable failure_detector ESC arming check
+#                       (fd_esc_arming_failure → immediate Disarm if not off)
+# COM_ARM_CHK_ESCS=0  : skip pre-arm ESC count check
+# CBRK_SUPPLY_CHK=894281 : bypass power supply unhealthy check
+param set-default NAV_DLL_ACT 0
+param set-default NAV_RCL_ACT 0
+param set-default COM_RC_IN_MODE 4
+param set-default FD_ESCS_EN 0
+param set-default COM_ARM_CHK_ESCS 0
+param set-default CBRK_SUPPLY_CHK 894281
+
+# ----------------------------------------------------------------------------
+# MAVLink GCS partner = Mac IP (unicast) — see 4007_gz_x500_gcs.post
+#
+# Default px4-rc.mavlink starts the GCS instance without a `-t <ip>` partner,
+# so PX4 only sends to whoever connects via udpout. For Mac GCS frontends
+# that can only do UDP listen/server (no outbound dial), 4007_gz_x500_gcs.post
+# stops the GCS instance after rcS completes and restarts it with explicit
+# `-t <Mac IP>` so PX4 actively unicasts to Mac.
