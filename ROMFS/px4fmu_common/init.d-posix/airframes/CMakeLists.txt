@@ -78,6 +78,8 @@ px4_add_romfs_files(
 	4004_gz_standard_vtol
 	4005_gz_x500_vision
 	4006_gz_px4vision
+	4007_gz_x500_gcs
+	4007_gz_x500_gcs.post
 	4008_gz_advanced_plane
 	4009_gz_r1_rover
 	4010_gz_x500_mono_cam

@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Post-init for 4007_gz_x500_gcs: re-bind GCS MAVLink instance to Mac unicast.
+# This file runs AFTER px4-rc.mavlink (rcS line 354), so we can stop the
+# default GCS instance and restart it with `-t <Mac IP>`.
+#
+
+mavlink stop -u 18570
+mavlink start -x -u 18570 -r 4000000 -f -t 192.168.50.86
+
+# Re-add GCS streams (mavlink stop drops them along with the instance)
+mavlink stream -r 50 -s POSITION_TARGET_LOCAL_NED -u 18570
+mavlink stream -r 50 -s LOCAL_POSITION_NED -u 18570
+mavlink stream -r 50 -s GLOBAL_POSITION_INT -u 18570
+mavlink stream -r 50 -s ATTITUDE -u 18570
+mavlink stream -r 50 -s ATTITUDE_QUATERNION -u 18570
+mavlink stream -r 50 -s ATTITUDE_TARGET -u 18570
+mavlink stream -r 50 -s SERVO_OUTPUT_RAW_0 -u 18570
+mavlink stream -r 20 -s RC_CHANNELS -u 18570
+mavlink stream -r 10 -s OPTICAL_FLOW_RAD -u 18570
