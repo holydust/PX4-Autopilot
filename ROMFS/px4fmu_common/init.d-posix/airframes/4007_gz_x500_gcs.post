@@ -4,6 +4,12 @@
 # This file runs AFTER px4-rc.mavlink (rcS line 354), so we can stop the
 # default GCS instance and restart it with `-t <Mac IP>`.
 #
+# Mac IP (192.168.50.86) is hardcoded LAN IP. Mac happens to get the same
+# .86 in both 家里 and 公司 LAN (both 192.168.50.0/24). Update + rebuild PX4
+# if Mac moves to a different subnet, or remove `-t` so PX4 uses default
+# "set partner from incoming udp source" behavior (requires Mac GCS to
+# udpout to server:18570 first).
+#
 
 mavlink stop -u 18570
 mavlink start -x -u 18570 -r 4000000 -f -t 192.168.50.86
